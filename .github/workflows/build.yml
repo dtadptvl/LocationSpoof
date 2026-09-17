@@ -36,11 +36,24 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             build
 
+      - name: Validate bundle metadata
+        run: |
+          set -euo pipefail
+          APP="$PWD/DerivedData/Build/Products/Release-iphoneos/LocationSpoof.app"
+          EXT="$APP/PlugIns/LocalTunnel.appex"
+          test -d "$APP"
+          test -d "$EXT"
+          for plist in "$APP/Info.plist" "$EXT/Info.plist"; do
+            /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$plist"
+            /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$plist"
+            /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist"
+            /usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$plist"
+          done
+
       - name: Package unsigned IPA
         run: |
           set -euo pipefail
-          APP_PATH="$(find "$PWD/DerivedData/Build/Products/Release-iphoneos" -maxdepth 1 -type d -name 'LocationSpoof.app' -print -quit)"
-          test -n "$APP_PATH"
+          APP_PATH="$PWD/DerivedData/Build/Products/Release-iphoneos/LocationSpoof.app"
           rm -rf "$PWD/dist"
           mkdir -p "$PWD/dist/Payload"
           cp -R "$APP_PATH" "$PWD/dist/Payload/LocationSpoof.app"
