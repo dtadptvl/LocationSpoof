@@ -13,12 +13,24 @@ struct ContentView: View {
         )
     )
 
+    private var pairingTypes: [UTType] {
+        var types: [UTType] = [.propertyList, .data]
+        if let type = UTType(filenameExtension: "mobiledevicepairing", conformingTo: .data) {
+            types.insert(type, at: 0)
+        }
+        if let type = UTType(filenameExtension: "mobiledevicepair", conformingTo: .data) {
+            types.insert(type, at: 0)
+        }
+        return types
+    }
+
     private var gpxType: UTType { UTType(filenameExtension: "gpx") ?? .xml }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
+                    pairingSection
                     searchSection
                     mapSection
                     statusView
@@ -30,14 +42,31 @@ struct ContentView: View {
             .navigationTitle("LocationSpoof")
             .toolbar { locationsMenu }
         }
-        .fileImporter(isPresented: $showPairingImporter, allowedContentTypes: [.propertyList, .data]) { result in
-            guard case let .success(url) = result else { return }
-            Task { await model.importPairingFile(from: url) }
+    }
+
+    private var pairingSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Device Pairing", systemImage: "link.badge.plus")
+                .font(.headline)
+
+            Text("Import a .mobiledevicepairing, .mobiledevicepair, or pairing .plist file before starting location spoofing.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Button {
+                showPairingImporter = true
+            } label: {
+                Label("Import Pairing File", systemImage: "doc.badge.plus")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .fileImporter(isPresented: $showPairingImporter, allowedContentTypes: pairingTypes) { result in
+                guard case let .success(url) = result else { return }
+                Task { await model.importPairingFile(from: url) }
+            }
         }
-        .fileImporter(isPresented: $showGPXImporter, allowedContentTypes: [gpxType, .xml]) { result in
-            guard case let .success(url) = result else { return }
-            Task { await model.importGPX(from: url) }
-        }
+        .padding()
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
 
     private var searchSection: some View {
@@ -134,9 +163,6 @@ struct ContentView: View {
 
     private var locationControls: some View {
         HStack {
-            Button("Pairing") { showPairingImporter = true }
-                .buttonStyle(.bordered)
-
             Button(model.isSelectedFavorite ? "Unfavorite" : "Favorite") {
                 model.toggleFavorite()
             }
@@ -163,6 +189,10 @@ struct ContentView: View {
                 Spacer()
                 Button("Import GPX") { showGPXImporter = true }
                     .buttonStyle(.bordered)
+                    .fileImporter(isPresented: $showGPXImporter, allowedContentTypes: [gpxType, .xml]) { result in
+                        guard case let .success(url) = result else { return }
+                        Task { await model.importGPX(from: url) }
+                    }
             }
 
             if model.routePoints.count > 1 {
