@@ -1,17 +1,57 @@
-name: Build
+name: Build IPA
+
 on:
   push:
   pull_request:
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+
+      - name: Xcode version
+        run: xcodebuild -version
+
       - name: Install XcodeGen
         run: brew install xcodegen
+
       - name: Bootstrap pinned idevice dependency
         run: ./scripts/bootstrap-vendor.sh
+
       - name: Generate project
         run: xcodegen generate
-      - name: Build without signing
-        run: xcodebuild -project LocationSpoof.xcodeproj -scheme LocationSpoof -sdk iphoneos -configuration Debug CODE_SIGNING_ALLOWED=NO build
+
+      - name: Build unsigned app
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project LocationSpoof.xcodeproj \
+            -scheme LocationSpoof \
+            -sdk iphoneos \
+            -configuration Release \
+            -derivedDataPath "$PWD/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          APP_PATH="$(find "$PWD/DerivedData/Build/Products/Release-iphoneos" -maxdepth 1 -type d -name 'LocationSpoof.app' -print -quit)"
+          test -n "$APP_PATH"
+          rm -rf "$PWD/dist"
+          mkdir -p "$PWD/dist/Payload"
+          cp -R "$APP_PATH" "$PWD/dist/Payload/LocationSpoof.app"
+          cd "$PWD/dist"
+          /usr/bin/zip -qry LocationSpoof-unsigned.ipa Payload
+          /usr/bin/unzip -l LocationSpoof-unsigned.ipa | tail -n 20
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: LocationSpoof-unsigned-ipa
+          path: dist/LocationSpoof-unsigned.ipa
+          if-no-files-found: error
+          compression-level: 0
