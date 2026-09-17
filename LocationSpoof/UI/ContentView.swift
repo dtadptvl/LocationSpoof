@@ -49,8 +49,9 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .fileImporter(isPresented: $showPairingImporter, allowedContentTypes: [.propertyList]) { result in
+            .fileImporter(isPresented: $showPairingImporter, allowedContentTypes: [.item]) { result in
                 guard case let .success(url) = result else { return }
+                guard url.pathExtension.lowercased() == "plist" else { return }
                 Task { await model.importPairingFile(from: url) }
             }
         }
