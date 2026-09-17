@@ -1,0 +1,17 @@
+name: Build
+on:
+  push:
+  pull_request:
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Bootstrap pinned idevice dependency
+        run: ./scripts/bootstrap-vendor.sh
+      - name: Generate project
+        run: xcodegen generate
+      - name: Build without signing
+        run: xcodebuild -project LocationSpoof.xcodeproj -scheme LocationSpoof -sdk iphoneos -configuration Debug CODE_SIGNING_ALLOWED=NO build

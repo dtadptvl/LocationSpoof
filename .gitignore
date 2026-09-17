@@ -1,0 +1,6 @@
+.DS_Store
+DerivedData/
+*.xcuserstate
+Vendor/idevice/idevice.h
+Vendor/idevice/libidevice_ffi.a
+LocationSpoof.xcodeproj/
