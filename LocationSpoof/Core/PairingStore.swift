@@ -3,15 +3,21 @@ import Foundation
 final class PairingStore {
     private let fileManager = FileManager.default
     private let filename = "device-pairing.plist"
+    private let bundledResourceName = "pairingFile"
 
     var pairingFileURL: URL? {
-        let url = storageDirectory.appendingPathComponent(filename)
-        return fileManager.fileExists(atPath: url.path) ? url : nil
+        let stored = storageDirectory.appendingPathComponent(filename)
+        if fileManager.fileExists(atPath: stored.path) {
+            return stored
+        }
+
+        return Bundle.main.url(forResource: bundledResourceName, withExtension: "plist")
     }
 
     func importFile(from source: URL) throws {
         let accessed = source.startAccessingSecurityScopedResource()
         defer { if accessed { source.stopAccessingSecurityScopedResource() } }
+
         try fileManager.createDirectory(at: storageDirectory, withIntermediateDirectories: true)
         let destination = storageDirectory.appendingPathComponent(filename)
         if fileManager.fileExists(atPath: destination.path) {
