@@ -13,17 +13,6 @@ struct ContentView: View {
         )
     )
 
-    private var pairingTypes: [UTType] {
-        var types: [UTType] = [.propertyList, .data]
-        if let type = UTType(filenameExtension: "mobiledevicepairing", conformingTo: .data) {
-            types.insert(type, at: 0)
-        }
-        if let type = UTType(filenameExtension: "mobiledevicepair", conformingTo: .data) {
-            types.insert(type, at: 0)
-        }
-        return types
-    }
-
     private var gpxType: UTType { UTType(filenameExtension: "gpx") ?? .xml }
 
     var body: some View {
@@ -49,7 +38,7 @@ struct ContentView: View {
             Label("Device Pairing", systemImage: "link.badge.plus")
                 .font(.headline)
 
-            Text("Import a .mobiledevicepairing, .mobiledevicepair, or pairing .plist file before starting location spoofing.")
+            Text("Import a pairing .plist file before starting location spoofing.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -60,7 +49,7 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .fileImporter(isPresented: $showPairingImporter, allowedContentTypes: pairingTypes) { result in
+            .fileImporter(isPresented: $showPairingImporter, allowedContentTypes: [.propertyList]) { result in
                 guard case let .success(url) = result else { return }
                 Task { await model.importPairingFile(from: url) }
             }
